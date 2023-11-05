@@ -6,6 +6,7 @@ import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:money_tracker/Custom/CusText.dart';
 import 'package:money_tracker/Database/DataBaseHelper.dart';
 import 'package:money_tracker/Models/ExpenseModel.dart';
+import 'package:money_tracker/Screens/ExpenseListScreen.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 class HomePage extends StatefulWidget {
@@ -71,7 +72,10 @@ class _HomePageState extends State<HomePage> {
       int new_total = model.expense! + old_total;*/
       to += model.expense;
       temp = ExpenseModel(
+          month: model.month,
+          year: model.year,
           time: model.time,
+          day: model.day,
           type: model.type,
           date: model.date,
           expense: model.expense,
@@ -123,7 +127,17 @@ class _HomePageState extends State<HomePage> {
               Icons.refresh,
             ),
             tooltip: 'Refresh',
-          )
+          ),
+          IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ListScreen(),
+                  ),
+                );
+              },
+              icon: Icon(Icons.format_list_numbered_sharp))
         ],
       ),
       body: Container(
@@ -133,19 +147,24 @@ class _HomePageState extends State<HomePage> {
               flex: 8,
               child: SfCartesianChart(
                 primaryXAxis: CategoryAxis(),
-                // primaryYAxis:  NumericAxis(minimum: 0,interval: 40,maximum : 100),
-                series: <ChartSeries<ExpenseModel, int>>[
-                  ColumnSeries<ExpenseModel, int>(
+                series: <ChartSeries>[
+                  ColumnSeries<ExpenseModel, String>(
                     color: Colors.blue,
                     dataSource: data,
-                    xValueMapper: (ExpenseModel model, _) => model.expense,
+                    xValueMapper: (ExpenseModel model, _) => model.type,
                     yValueMapper: (ExpenseModel model, _) => model.expense,
                     name: "Expense",
-                    borderRadius: BorderRadius.only(topLeft: Radius.circular(8),topRight: Radius.circular(8)),
+                    borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(8),
+                        topRight: Radius.circular(8)),
                     dataLabelSettings: const DataLabelSettings(isVisible: true),
                   )
                 ],
               ),
+            ),
+            Expanded(
+              flex: 1,
+              child: _chartFrame(context),
             ),
             Expanded(
               flex: 2,
@@ -167,7 +186,15 @@ class _HomePageState extends State<HomePage> {
         onPressed: () {
           int id = -1;
           ExpenseModel temp = ExpenseModel(
-              time: '', type: '', date: '', expense: -1, total_exp: -1, id: id);
+              time: '',
+              type: '',
+              day: '',
+              date: 0,
+              month: '',
+              year: 0,
+              expense: -1,
+              total_exp: -1,
+              id: id);
           _openAddDialog(context, 'New Expense', 'ADD', true, temp);
         },
       ),
@@ -210,7 +237,12 @@ class _HomePageState extends State<HomePage> {
                     ElevatedButton(
                         onPressed: () async {
                           var currentTime = DateTime.now();
-                          String date = DateFormat.yMMMd().format(currentTime);
+                          int date =
+                              int.parse(DateFormat.d().format(currentTime));
+                          String month = DateFormat.MMM().format(currentTime);
+                          int year =
+                              int.parse(DateFormat.y().format(currentTime));
+                          String day = DateFormat.EEEE().format(currentTime);
                           String time = DateFormat.jm().format(currentTime);
                           int exp = int.parse(expenseContoroller.value.text);
                           String type = typeContoroller.value.text;
@@ -219,6 +251,9 @@ class _HomePageState extends State<HomePage> {
                           if (isNew) {
                             model = ExpenseModel(
                               time: time.toString(),
+                              month: month,
+                              year: year,
+                              day: day,
                               type: type,
                               date: date,
                               expense: exp,
@@ -229,6 +264,9 @@ class _HomePageState extends State<HomePage> {
                             model = ExpenseModel(
                               time: temp.time.toString(),
                               type: '$type*',
+                              month: month,
+                              year: year,
+                              day: day,
                               date: temp.date,
                               expense: exp,
                               total_exp: total_exp,
@@ -305,6 +343,79 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _chartFrame(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Weekly chart',
+          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Container(
+              width: 25,
+              height: 25,
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.black, width: 2)),
+              child: Center(
+                  child: Text('D',
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold))),
+            ),
+            const SizedBox(
+              width: 10,
+            ),
+            Container(
+              width: 25,
+              height: 25,
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.black, width: 2)),
+              child: Center(
+                  child: Text('W',
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold))),
+            ),
+            const SizedBox(
+              width: 10,
+            ),
+            Container(
+              width: 25,
+              height: 25,
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.black, width: 2)),
+              child: Center(
+                  child: Text('M',
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold))),
+            ),
+            const SizedBox(
+              width: 10,
+            ),
+            Container(
+              width: 25,
+              height: 25,
+              decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.black, width: 2)),
+              child: Center(
+                  child: Text('Y',
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold))),
+            ),
+            const SizedBox(
+              width: 10,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _expenseListBuilder(BuildContext context) {
     return ListView.builder(
       physics: BouncingScrollPhysics(),
@@ -331,7 +442,8 @@ class _HomePageState extends State<HomePage> {
             size: 20,
           ),
           subtitle: CusText(
-            text: '${expenses[index]['time']} | ${expenses[index]['date']}',
+            text:
+                '${expenses[index]['time']} | ${expenses[index]['date']}/${expenses[index]['month']}/${expenses[index]['year']}',
             size: 15,
           ),
         );

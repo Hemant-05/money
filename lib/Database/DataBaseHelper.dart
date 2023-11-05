@@ -6,14 +6,14 @@ import 'package:sqflite/sqflite.dart';
 import 'package:sqflite/sqlite_api.dart';
 
 class DataBaseHelper {
-  static int version = 1;
+  static int version = 2;
   // static Database database = getDB();
 
   static Future<Database> getDB() async {
     String path = join(await getDatabasesPath(), 'expense_db.db');
     Database expense_db = await openDatabase(path, onCreate: (db, v) async {
      await db.execute(
-          'create table if not exists expenseTable(id integer primary key autoincrement,type text,time text,date text,expense integer,total_exp integer)');
+          'create table if not exists expenseTable(id integer primary key autoincrement,type text,time text,day text,date integer,month integer,year integer,expense integer,total_exp integer)');
     }, version: version);
    return expense_db;
   }
