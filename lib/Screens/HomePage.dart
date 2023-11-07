@@ -1,12 +1,13 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 import 'package:intl/intl.dart';
-import 'package:charts_flutter/flutter.dart' as charts;
+import 'package:money_tracker/Custom/CusSnackBar.dart';
 import 'package:money_tracker/Custom/CusText.dart';
 import 'package:money_tracker/Database/DataBaseHelper.dart';
 import 'package:money_tracker/Models/ExpenseModel.dart';
 import 'package:money_tracker/Screens/ExpenseListScreen.dart';
+import 'package:money_tracker/getx/ChartTimeFrame.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 class HomePage extends StatefulWidget {
@@ -29,6 +30,8 @@ class _HomePageState extends State<HomePage> {
   List<Map<String, dynamic>> expenses = [];
   int total_exp = 0;
   final List<ExpenseModel> data = [];
+  ChartTimeFrameController timeFrameController =
+      Get.put(ChartTimeFrameController());
 
   @override
   void initState() {
@@ -95,24 +98,7 @@ class _HomePageState extends State<HomePage> {
     data.addAll(temp);
   }
 
-  customSnackBar(BuildContext context, String text) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
-        ),
-        padding: const EdgeInsets.all(12),
-        behavior: SnackBarBehavior.floating,
-        width: 180,
-        duration: Duration(seconds: 2),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
-      ),
-    );
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -130,6 +116,7 @@ class _HomePageState extends State<HomePage> {
           ),
           IconButton(
               onPressed: () {
+                // Get.to(ListScreen());
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -146,25 +133,25 @@ class _HomePageState extends State<HomePage> {
             Expanded(
               flex: 8,
               child: SfCartesianChart(
-                primaryXAxis: CategoryAxis(),
-                series: <ChartSeries>[
-                  ColumnSeries<ExpenseModel, String>(
-                    color: Colors.blue,
-                    dataSource: data,
-                    xValueMapper: (ExpenseModel model, _) => model.type,
-                    yValueMapper: (ExpenseModel model, _) => model.expense,
-                    name: "Expense",
-                    borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(8),
-                        topRight: Radius.circular(8)),
-                    dataLabelSettings: const DataLabelSettings(isVisible: true),
-                  )
-                ],
+                  primaryXAxis: CategoryAxis(),
+                  series: <ChartSeries>[
+                    ColumnSeries<ExpenseModel, String>(
+                      color: Colors.blue,
+                      dataSource: data,
+                      xValueMapper: (ExpenseModel model, _) => '${model.type}',
+                      yValueMapper: (ExpenseModel model, _) => model.expense,
+                      name: "Expense",
+                      borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(8),
+                          topRight: Radius.circular(8)),
+                      dataLabelSettings: const DataLabelSettings(isVisible: true),
+                    )
+                  ],
+                ),
               ),
-            ),
             Expanded(
               flex: 1,
-              child: _chartFrame(context),
+              child: _temp(context),
             ),
             Expanded(
               flex: 2,
@@ -177,7 +164,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-            Expanded(flex: 10, child: _expenseListBuilder(context)),
+            Expanded(flex: 14, child: _expenseListBuilder(context)),
           ],
         ),
       ),
@@ -284,9 +271,9 @@ class _HomePageState extends State<HomePage> {
                           if (c != 0) {
                             expenseContoroller.clear();
                             typeContoroller.clear();
-                            customSnackBar(context, snackText);
+                            CusSnackBar1(context, snackText);
                           } else {
-                            customSnackBar(context, 'Error !');
+                            CusSnackBar1(context, 'Error !');
                           }
                           refresh();
                           Navigator.pop(context);
@@ -320,7 +307,7 @@ class _HomePageState extends State<HomePage> {
               onPressed: () async {
                 int? id = deleteModel.id;
                 await DataBaseHelper.delete(id!);
-                customSnackBar(context, '${deleteModel.type} deleted !!');
+                CusSnackBar1(context, '${deleteModel.type} deleted !!');
                 refresh();
                 await Future.delayed(const Duration(milliseconds: 50));
                 updateTotalExpInList();
@@ -332,7 +319,7 @@ class _HomePageState extends State<HomePage> {
             ),
             ElevatedButton(
               onPressed: () {
-                customSnackBar(context, 'Not Deleted');
+                CusSnackBar1(context, 'Not Deleted');
                 Navigator.pop(context);
               },
               child: Text('No'),
@@ -343,76 +330,40 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _chartFrame(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          'Weekly chart',
-          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 18),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Container(
-              width: 25,
-              height: 25,
+  Widget _temp(BuildContext context) {
+    return ListView.builder(
+      scrollDirection: Axis.horizontal,
+      itemCount: timeFrameController.frameList.length,
+      itemBuilder: (context, index) {
+        return Obx(
+          () => GestureDetector(
+            onTap: () => timeFrameController.selectedIndex.value = index,
+            child: AnimatedContainer(
+              height: 10,
+              width: 24,
+              margin: EdgeInsets.symmetric(horizontal: 5),
               decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.black, width: 2)),
+                  color: (timeFrameController.selectedIndex.value == index)
+                      ? Colors.black
+                      : Colors.white,
+                  borderRadius: BorderRadius.all(Radius.circular(6)),
+                  border: Border.all(color: Colors.black, width: 1)),
+              duration: Duration(milliseconds: 200),
               child: Center(
-                  child: Text('D',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold))),
+                child: Text(
+                  timeFrameController.frameList[index],
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: (timeFrameController.selectedIndex.value == index)
+                          ? Colors.white
+                          : Colors.black),
+                ),
+              ),
             ),
-            const SizedBox(
-              width: 10,
-            ),
-            Container(
-              width: 25,
-              height: 25,
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.black, width: 2)),
-              child: Center(
-                  child: Text('W',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold))),
-            ),
-            const SizedBox(
-              width: 10,
-            ),
-            Container(
-              width: 25,
-              height: 25,
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.black, width: 2)),
-              child: Center(
-                  child: Text('M',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold))),
-            ),
-            const SizedBox(
-              width: 10,
-            ),
-            Container(
-              width: 25,
-              height: 25,
-              decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.black, width: 2)),
-              child: Center(
-                  child: Text('Y',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold))),
-            ),
-            const SizedBox(
-              width: 10,
-            ),
-          ],
-        ),
-      ],
+          ),
+        );
+      },
     );
   }
 
@@ -422,7 +373,6 @@ class _HomePageState extends State<HomePage> {
       itemCount: expenses.length,
       itemBuilder: (context, index) {
         int expense = expenses[index]['expense'];
-        int id = expenses[index]['id'];
         String type = expenses[index]['type'];
         ExpenseModel temp = ExpenseModel.fromjson(expenses[index]);
         return ListTile(
